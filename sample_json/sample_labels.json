@@ -1,0 +1,191 @@
+{
+  "Labels": [
+    {
+      "Name": "Puppy",
+      "Confidence": 99.97078704833984,
+      "Instances": [],
+      "Parents": [
+        {
+          "Name": "Animal"
+        },
+        {
+          "Name": "Canine"
+        },
+        {
+          "Name": "Dog"
+        },
+        {
+          "Name": "Mammal"
+        },
+        {
+          "Name": "Pet"
+        }
+      ]
+    },
+    {
+      "Name": "Canine",
+      "Confidence": 99.97078704833984,
+      "Instances": [],
+      "Parents": [
+        {
+          "Name": "Animal"
+        },
+        {
+          "Name": "Mammal"
+        }
+      ]
+    },
+    {
+      "Name": "Animal",
+      "Confidence": 99.97078704833984,
+      "Instances": [],
+      "Parents": []
+    },
+    {
+      "Name": "Pet",
+      "Confidence": 99.97078704833984,
+      "Instances": [],
+      "Parents": [
+        {
+          "Name": "Animal"
+        }
+      ]
+    },
+    {
+      "Name": "Mammal",
+      "Confidence": 99.97078704833984,
+      "Instances": [],
+      "Parents": [
+        {
+          "Name": "Animal"
+        }
+      ]
+    },
+    {
+      "Name": "Dog",
+      "Confidence": 99.97078704833984,
+      "Instances": [
+        {
+          "BoundingBox": {
+            "Width": 0.26741471886634827,
+            "Height": 0.6198879480361938,
+            "Left": 0.25256872177124023,
+            "Top": 0.24552977085113525
+          },
+          "Confidence": 95.11589050292969
+        },
+        {
+          "BoundingBox": {
+            "Width": 0.25814488530158997,
+            "Height": 0.6248733401298523,
+            "Left": 0.4994044899940491,
+            "Top": 0.20922282338142395
+          },
+          "Confidence": 83.48751068115234
+        }
+      ],
+      "Parents": [
+        {
+          "Name": "Animal"
+        },
+        {
+          "Name": "Canine"
+        },
+        {
+          "Name": "Mammal"
+        },
+        {
+          "Name": "Pet"
+        }
+      ]
+    },
+    {
+      "Name": "Grass",
+      "Confidence": 99.4028549194336,
+      "Instances": [],
+      "Parents": [
+        {
+          "Name": "Plant"
+        }
+      ]
+    },
+    {
+      "Name": "Plant",
+      "Confidence": 99.4028549194336,
+      "Instances": [],
+      "Parents": []
+    },
+    {
+      "Name": "Golden Retriever",
+      "Confidence": 97.85136413574219,
+      "Instances": [],
+      "Parents": [
+        {
+          "Name": "Animal"
+        },
+        {
+          "Name": "Canine"
+        },
+        {
+          "Name": "Dog"
+        },
+        {
+          "Name": "Mammal"
+        },
+        {
+          "Name": "Pet"
+        }
+      ]
+    },
+    {
+      "Name": "Grassland",
+      "Confidence": 57.56116485595703,
+      "Instances": [],
+      "Parents": [
+        {
+          "Name": "Field"
+        },
+        {
+          "Name": "Nature"
+        },
+        {
+          "Name": "Outdoors"
+        }
+      ]
+    },
+    {
+      "Name": "Outdoors",
+      "Confidence": 57.56116485595703,
+      "Instances": [],
+      "Parents": []
+    },
+    {
+      "Name": "Nature",
+      "Confidence": 57.56116485595703,
+      "Instances": [],
+      "Parents": [
+        {
+          "Name": "Outdoors"
+        }
+      ]
+    },
+    {
+      "Name": "Field",
+      "Confidence": 57.56116485595703,
+      "Instances": [],
+      "Parents": []
+    }
+  ],
+  "LabelModelVersion": "3.0",
+  "ResponseMetadata": {
+    "RequestId": "a0776f20-50d0-4dcc-80c6-8bc7adb3c069",
+    "HTTPStatusCode": 200,
+    "HTTPHeaders": {
+      "x-amzn-requestid": "a0776f20-50d0-4dcc-80c6-8bc7adb3c069",
+      "content-type": "application/x-amz-json-1.1",
+      "content-length": "2492",
+      "date": "Mon, 07 Nov 2022 05:44:57 GMT"
+    },
+    "RetryAttempts": 0
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "Records": [
+    {
+      "eventVersion": "2.1",
+      "eventSource": "aws:s3",
+      "awsRegion": "us-east-1",
+      "eventTime": "2022-11-07T03:06:14.054Z",
+      "eventName": "ObjectCreated:Put",
+      "userIdentity": {
+        "principalId": "A2Y0MD37Q12R87"
+      },
+      "requestParameters": {
+        "sourceIPAddress": "100.37.88.93"
+      },
+      "responseElements": {
+        "x-amz-request-id": "4T0CMFRE8J4E1QZP",
+        "x-amz-id-2": "mEz2zBTK368y+n+StsVwrvyqWA3UfcGrWEnivJ/zAYQrPDBXv9ojdU0QuyLUHQZbDLxvA3IiUI1fSpwUZt5R+pCPaPIO2Zb1"
+      },
+      "s3": {
+        "s3SchemaVersion": "1.0",
+        "configurationId": "photo-upload",
+        "bucket": {
+          "name": "assignment2-nyu-photos",
+          "ownerIdentity": {
+            "principalId": "A2Y0MD37Q12R87"
+          },
+          "arn": "arn:aws:s3:::assignment2-nyu-photos"
+        },
+        "object": {
+          "key": "dog1.jpg",
+          "size": 3405,
+          "eTag": "d93cc54f82b1b791dc74db966009f66f",
+          "sequencer": "006368762608B92EF8"
+        }
+      }
+    }
+  ]
+}

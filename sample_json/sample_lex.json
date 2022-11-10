@@ -1,0 +1,87 @@
+{
+    "ResponseMetadata": {
+      "RequestId": "b221bd21-5c30-4a31-b252-922d64491f97",
+      "HTTPStatusCode": 200,
+      "HTTPHeaders": {
+        "x-amzn-requestid": "b221bd21-5c30-4a31-b252-922d64491f97",
+        "strict-transport-security": "max-age=31536000; includeSubDomains",
+        "x-content-type-options": "nosniff",
+        "date": "Wed, 09 Nov 2022 21:55:28 GMT",
+        "content-type": "application/json",
+        "content-length": "825"
+      },
+      "RetryAttempts": 0
+    },
+    "sessionState": {
+      "dialogAction": {
+        "type": "Close"
+      },
+      "intent": {
+        "name": "SearchIntent",
+        "slots": {
+          "tag1": {
+            "value": {
+              "originalValue": "cat",
+              "interpretedValue": "cat",
+              "resolvedValues": [
+                "cat"
+              ]
+            }
+          },
+          "tag2": {
+            "value": {
+              "originalValue": "dog",
+              "interpretedValue": "dog",
+              "resolvedValues": [
+                "dog"
+              ]
+            }
+          }
+        },
+        "state": "ReadyForFulfillment",
+        "confirmationState": "None"
+      },
+      "sessionAttributes": {},
+      "originatingRequestId": "37b301b6-fef0-486f-bff5-e03783a6e85b"
+    },
+    "interpretations": [
+      {
+        "nluConfidence": {
+          "score": 1
+        },
+        "intent": {
+          "name": "SearchIntent",
+          "slots": {
+            "tag1": {
+              "value": {
+                "originalValue": "cat",
+                "interpretedValue": "cat",
+                "resolvedValues": [
+                  "cat"
+                ]
+              }
+            },
+            "tag2": {
+              "value": {
+                "originalValue": "dog",
+                "interpretedValue": "dog",
+                "resolvedValues": [
+                  "dog"
+                ]
+              }
+            }
+          },
+          "state": "ReadyForFulfillment",
+          "confirmationState": "None"
+        }
+      },
+      {
+        "intent": {
+          "name": "FallbackIntent",
+          "slots": {}
+        }
+      }
+    ],
+    "sessionId": "assignment2"
+  }
+  
