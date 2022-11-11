@@ -16,6 +16,8 @@ openSearch = OpenSearch(
     connection_class=RequestsHttpConnection,
 )
 
+s3 = boto3.resource('s3')
+
 def print2(m):
     logger.debug(m)
 
@@ -31,6 +33,7 @@ def create(key, doc):
 
 def lambda_handler(event, context):
     # TODO implement
+    
     file_key = event["Records"][0]["s3"]["object"]["key"]
     creation_time = event["Records"][0]["eventTime"]
     
@@ -44,12 +47,16 @@ def lambda_handler(event, context):
         },
         MinConfidence=70,
     )
-    labels = ";".join([label["Name"] for label in response["Labels"]])
+    labels = [label["Name"] for label in response["Labels"]]
+    photo = s3.Object(bucket, file_key)
+    if "customlabels" in photo.metadata:
+        for label in photo.metadata["customlabels"].split(","):
+            labels.append(label.strip())
     doc = {
         "objectKey": file_key,
         "bucket": bucket,
         "createdTimestamp": creation_time,
-        "labels": labels,
+        "labels": ";".join(labels),
     }
 
     return create(file_key, doc)
