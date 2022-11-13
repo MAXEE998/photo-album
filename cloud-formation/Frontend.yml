@@ -1,0 +1,121 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Photo Album Frontend
+Resources:
+  S3FrontendPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      PolicyDocument:
+        Id: PublicWebsitePolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref S3Frontend
+                - /*
+      Bucket: !Ref S3Frontend
+
+  S3Frontend:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      AccessControl: PublicRead
+      BucketName: photo-album-frontend-cf
+      WebsiteConfiguration:
+        IndexDocument: index.html
+
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument: |
+        {
+            "Statement": [{
+                "Effect": "Allow",
+                "Principal": { "Service": [ "codepipeline.amazonaws.com" ]},
+                "Action": [ "sts:AssumeRole" ]
+            }]
+        }
+      Policies:
+        - PolicyName: code-pipeline-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Resource:
+                  - !Sub arn:aws:s3:::${S3Frontend}/*
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:PutObjectAcl
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketVersioning
+                  - s3:ListObjects
+              - Resource:
+                  - arn:aws:s3:::*
+                Effect: Allow
+                Action:
+                  - s3:ListAllMyBuckets
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                  - iam:PassRole
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - lambda:*
+
+  CodePipelineFrontend:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: photo-album-frontend-pipeline-cf
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      ArtifactStore:
+          Type: S3
+          Location: !Ref S3Frontend
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: App
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Version: 1
+                Provider: GitHub
+              Configuration:
+                Owner: MAXEE998
+                Repo: cloud-computing-assignment2-frontend
+                Branch: main
+                OAuthToken: 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
+              OutputArtifacts:
+                - Name: App
+              RunOrder: 1
+        - Name: Deploy
+          Actions:
+            - Name: ClientDeployStep
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: S3
+              Configuration:
+                BucketName: !Ref S3Frontend
+                Extract: true
+              InputArtifacts:
+                - Name: App
+              OutputArtifacts: []
+              Region: us-east-1
+              RunOrder: 1
+
+
+Outputs:
+  WebsiteURL:
+    Description: URL for Website Hosted on S3
+    Value: !GetAtt
+      - S3Frontend
+      - WebsiteURL
