@@ -82,9 +82,29 @@ Resources:
 
   S3Photos:
     Type: "AWS::S3::Bucket"
+    DependsOn:
+      - ProcessingLambdaPermission
     Properties:
       BucketName: photos-cf
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Function: !GetAtt LambdaIndexPhotos.Arn
+            Filter:
+              S3Key:
+                Rules:
+                - Name: suffix
+                  Value: .jpg
   
+  ProcessingLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref LambdaIndexPhotos
+      Principal: s3.amazonaws.com
+      SourceArn: arn:aws:s3:::photos-cf
+      SourceAccount: !Ref AWS::AccountId
+
   LambdaRuntimeRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -110,9 +130,13 @@ Resources:
   LambdaSearchPhotos:
     Type: "AWS::Lambda::Function"
     Properties:
+      Environment:
+        Variables: 
+          openSearchHost: !GetAtt Elasticsearch.DomainEndpoint
+          lexBotID: !GetAtt LexBot.Id
       Code:
         S3Bucket: code-hongyi
-        S3Key: search-photos.zip
+        S3Key: search-photos-cf.zip
       Handler: lambda_function.lambda_handler
       Runtime: python3.9
       Description: ""
@@ -123,15 +147,41 @@ Resources:
   LambdaIndexPhotos:
     Type: "AWS::Lambda::Function"
     Properties:
+      Environment:
+        Variables: 
+          openSearchHost: !GetAtt Elasticsearch.DomainEndpoint
+          photoBucket: photos-cf
       Code:
         S3Bucket: code-hongyi
-        S3Key: index-photos.zip
+        S3Key: index-photos-cf.zip
       Handler: lambda_function.lambda_handler
       Runtime: python3.9
       Description: ""
       MemorySize: 128
       Timeout: 3
       Role: !GetAtt LambdaRuntimeRole.Arn
+
+  LambdaCreateIndex:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Environment:
+        Variables: 
+          openSearchHost: !GetAtt Elasticsearch.DomainEndpoint
+      Code:
+        S3Bucket: code-hongyi
+        S3Key: create-index-cf.zip
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.9
+      Description: ""
+      MemorySize: 128
+      Timeout: 3
+      Role: !GetAtt LambdaRuntimeRole.Arn
+
+  CreateIndexInvoke:
+    Type: AWS::CloudFormation::CustomResource
+    Version: "1.0"
+    Properties:
+      ServiceToken: !GetAtt LambdaCreateIndex.Arn
 
   LexBot:
     DependsOn: BotRuntimeRole

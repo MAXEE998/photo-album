@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Photo Album Invoke
+Resources:
+
+  LambdaRuntimeRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: "*"
+                Resource: "*"
+
+  LambdaCreateIndexTest:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Environment:
+        Variables: 
+          openSearchHost: search-assignment2-m3x5c4zswkalnoqpcpjqv47apm.us-east-1.es.amazonaws.com
+      Code:
+        S3Bucket: code-hongyi
+        S3Key: create-index-cf.zip
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.9
+      Description: ""
+      MemorySize: 128
+      Timeout: 3
+      Role: !GetAtt LambdaRuntimeRole.Arn
+
+  CreateIndexInvoke:
+    Type: AWS::CloudFormation::CustomResource
+    Version: "1.0"
+    Properties:
+      ServiceToken: !GetAtt LambdaCreateIndexTest.Arn
+
