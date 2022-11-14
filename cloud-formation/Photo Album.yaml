@@ -419,15 +419,11 @@ Resources:
                 - aws lambda update-function-code --function-name ${LambdaIndexPhotos} --zip-file fileb://index-photos-cf.zip
                 - aws lambda update-function-code --function-name ${LambdaCreateIndex} --zip-file fileb://create-index-cf.zip
                 - echo "DONE!!"
+      SourceVersion: main
       ServiceRole: !GetAtt CodeBuildBEServiceRole.Arn
       Triggers:
         BuildType: BUILD
         Webhook: true
-        FilterGroups:
-          - - Type: EVENT
-              Pattern: PUSH
-            - Type: COMMIT_MESSAGE
-              Pattern: \[CodeBuild\]
 
 Outputs:
   WebsiteURL:
