@@ -52,7 +52,7 @@ Resources:
             Principal:
               AWS: "*"
             Action: "es:*"
-            Resource: arn:aws:es:us-east-1:814655805539:domain/photosearch/*
+            Resource: !Sub arn:aws:es:us-east-1:${AWS::AccountId}:domain/photosearch/*
 
   S3FrontendPolicy:
     Type: AWS::S3::BucketPolicy
@@ -340,8 +340,8 @@ Resources:
             Statement:
               - Effect: Allow
                 Resource:
-                  - arn:aws:logs:us-east-1:814655805539:log-group:/aws/codebuild/codebuild-backend-cf
-                  - arn:aws:logs:us-east-1:814655805539:log-group:/aws/codebuild/codebuild-backend-cf:*
+                  - !Sub arn:aws:logs:us-east-1:${AWS::AccountId}:log-group:/aws/codebuild/codebuild-backend-cf*
+                  - !Sub arn:aws:logs:us-east-1:${AWS::AccountId}:log-group:/aws/codebuild/codebuild-backend-cf*:*
                 Action:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
@@ -359,7 +359,7 @@ Resources:
                   - lambda:DeleteFunctionConcurrency
                   - lambda:PublishVersion
                 Resource: 
-                - arn:aws:lambda:us-east-1:814655805539:function:*
+                - !Sub arn:aws:lambda:us-east-1:${AWS::AccountId}:function:*
               - Effect: Allow
                 Resource:
                   - arn:aws:s3:::codepipeline-us-east-1-*
@@ -377,7 +377,7 @@ Resources:
                   - codebuild:BatchPutTestCases
                   - codebuild:BatchPutCodeCoverages
                 Resource:
-                  - arn:aws:codebuild:us-east-1:814655805539:report-group/*
+                  - !Sub arn:aws:codebuild:us-east-1:${AWS::AccountId}:report-group/*
 
   CodeBuildBackend:
     Type: AWS::CodeBuild::Project
@@ -394,7 +394,7 @@ Resources:
         Location: https://github.com/MAXEE998/photo-album
         Auth:
           Type: OAUTH
-          Resource: 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
+          Resource: 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
         BuildSpec: !Sub |
           version: 0.2
           phases:
@@ -420,6 +420,14 @@ Resources:
                 - aws lambda update-function-code --function-name ${LambdaCreateIndex} --zip-file fileb://create-index-cf.zip
                 - echo "DONE!!"
       ServiceRole: !GetAtt CodeBuildBEServiceRole.Arn
+      Triggers:
+        BuildType: BUILD
+        Webhook: true
+        FilterGroups:
+          - - Type: EVENT
+              Pattern: PUSH
+            - Type: COMMIT_MESSAGE
+              Pattern: \[CodeBuild\]
 
 Outputs:
   WebsiteURL:
