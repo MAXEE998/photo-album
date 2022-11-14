@@ -184,6 +184,7 @@ Resources:
       Environment:
         Variables: 
           openSearchHost: !GetAtt Elasticsearch.DomainEndpoint
+          lexBotID: !GetAtt LexBot.Id
       Code:
         S3Bucket: code-hongyi
         S3Key: create-index-cf.zip
@@ -191,7 +192,7 @@ Resources:
       Runtime: python3.9
       Description: ""
       MemorySize: 128
-      Timeout: 3
+      Timeout: 10
       Role: !GetAtt LambdaRuntimeRole.Arn
 
   CreateIndexInvoke:
