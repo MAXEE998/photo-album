@@ -96,6 +96,23 @@ Resources:
                 - Name: suffix
                   Value: .jpg
   
+  S3PhotosPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties: 
+      Bucket: !Ref S3Photos
+      PolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 's3:GetObject'
+            Effect: Allow
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref S3Photos
+                - /*
+            Principal: '*'
+
   ProcessingLambdaPermission:
     Type: AWS::Lambda::Permission
     Properties:
