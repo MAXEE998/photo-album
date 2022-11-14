@@ -1,0 +1,23 @@
+version: 0.2
+phases:
+  build:
+    commands:
+      - echo "Zipping deployment packages..."
+      - cd create-index-cf/package
+      - zip -r9 ../../create-index-cf.zip .
+      - zip -r9 ../../create-index-cf.zip ../lambda_function.py
+      - cd ../../search-photos-cf/package
+      - zip -r9 ../../search-photos-cf.zip .
+      - zip -r9 ../../search-photos-cf.zip ../lambda_function.py
+      - cd ../../index-photos-cf/package
+      - zip -r9 ../../index-photos-cf.zip .
+      - zip -r9 ../../index-photos-cf.zip ../lambda_function.py
+      - cd ../..
+
+  post_build:
+    commands:
+      - echo "Updating lambda Functions..."
+      - aws lambda update-function-code --function-name ${LambdaSearchPhotos} --zip-file fileb://search-photos-cf.zip
+      - aws lambda update-function-code --function-name ${LambdaIndexPhotos} --zip-file fileb://index-photos-cf.zip
+      - aws lambda update-function-code --function-name ${LambdaCreateIndex} --zip-file fileb://create-index-cf.zip
+      - echo "DONE!!"

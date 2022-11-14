@@ -321,6 +321,105 @@ Resources:
               Region: us-east-1
               RunOrder: 1
 
+  CodeBuildBEServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: backend-codebuild
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Resource:
+                  - arn:aws:logs:us-east-1:814655805539:log-group:/aws/codebuild/codebuild-backend-cf
+                  - arn:aws:logs:us-east-1:814655805539:log-group:/aws/codebuild/codebuild-backend-cf:*
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+              - Effect: Allow
+                Action:
+                  - lambda:AddPermission
+                  - lambda:RemovePermission
+                  - lambda:CreateAlias
+                  - lambda:UpdateAlias
+                  - lambda:DeleteAlias
+                  - lambda:UpdateFunctionCode
+                  - lambda:UpdateFunctionConfiguration
+                  - lambda:PutFunctionConcurrency
+                  - lambda:DeleteFunctionConcurrency
+                  - lambda:PublishVersion
+                Resource: 
+                - arn:aws:lambda:us-east-1:814655805539:function:*
+              - Effect: Allow
+                Resource:
+                  - arn:aws:s3:::codepipeline-us-east-1-*
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketAcl
+                  - s3:GetBucketLocation
+              - Effect: Allow
+                Action:
+                  - codebuild:CreateReportGroup
+                  - codebuild:CreateReport
+                  - codebuild:UpdateReport
+                  - codebuild:BatchPutTestCases
+                  - codebuild:BatchPutCodeCoverages
+                Resource:
+                  - arn:aws:codebuild:us-east-1:814655805539:report-group/*
+
+  CodeBuildBackend:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: codebuild-backend-cf
+      Artifacts: 
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/standard:5.0
+        ComputeType: BUILD_GENERAL1_SMALL
+      Source:
+        Type: GITHUB
+        Location: https://github.com/MAXEE998/photo-album
+        Auth:
+          Type: OAUTH
+          Resource: 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
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            build:
+              commands:
+                - echo "Zipping deployment packages..."
+                - cd create-index-cf/package
+                - zip -r9 ../../create-index-cf.zip .
+                - zip -r9 ../../create-index-cf.zip ../lambda_function.py
+                - cd ../../search-photos-cf/package
+                - zip -r9 ../../search-photos-cf.zip .
+                - zip -r9 ../../search-photos-cf.zip ../lambda_function.py
+                - cd ../../index-photos-cf/package
+                - zip -r9 ../../index-photos-cf.zip .
+                - zip -r9 ../../index-photos-cf.zip ../lambda_function.py
+                - cd ../..
+
+            post_build:
+              commands:
+                - echo "Updating lambda Functions..."
+                - aws lambda update-function-code --function-name ${LambdaSearchPhotos} --zip-file fileb://search-photos-cf.zip
+                - aws lambda update-function-code --function-name ${LambdaIndexPhotos} --zip-file fileb://index-photos-cf.zip
+                - aws lambda update-function-code --function-name ${LambdaCreateIndex} --zip-file fileb://create-index-cf.zip
+                - echo "DONE!!"
+      ServiceRole: !GetAtt CodeBuildBEServiceRole.Arn
 
 Outputs:
   WebsiteURL:
