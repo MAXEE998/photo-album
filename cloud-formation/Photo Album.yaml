@@ -1,5 +1,12 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Photo Album
+Parameters:
+  FrontendToken:
+    Type: String
+
+  BackendToken:
+    Type: String
+
 Resources:
   APIGateway:
     Type: AWS::ApiGateway::RestApi
@@ -532,7 +539,7 @@ Resources:
                 Owner: MAXEE998
                 Repo: cloud-computing-assignment2-frontend
                 Branch: main
-                OAuthToken: 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
+                OAuthToken: !Ref FrontendToken
               OutputArtifacts:
                 - Name: App
               RunOrder: 1
@@ -572,7 +579,7 @@ Resources:
     Type: 'AWS::CodePipeline::Webhook' 
     Properties:
       AuthenticationConfiguration: 
-        SecretToken: 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
+        SecretToken: !Ref FrontendToken
       Filters: 
       - JsonPath: "$.ref" 
         MatchEquals: refs/heads/main
@@ -656,7 +663,7 @@ Resources:
         Location: https://github.com/MAXEE998/photo-album
         Auth:
           Type: OAUTH
-          Resource: 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
+          Resource: !Ref BackendToken
         BuildSpec: !Sub |
           version: 0.2
           phases:
