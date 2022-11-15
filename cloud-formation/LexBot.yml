@@ -6,13 +6,31 @@ Resources:
     Type: AWS::Lex::Bot
     Properties:
       IdleSessionTTLInSeconds: 300
-      Name: "searchPhotoCF"
+      Name: "searchPhotoCFTEST"
       RoleArn: !GetAtt BotRuntimeRole.Arn
       DataPrivacy:
         ChildDirected: false
       BotFileS3Location:
         S3Bucket: code-hongyi
         S3ObjectKey: SearchPhotos-DRAFT-GHPLJQNTLA-LexJson.zip
+
+  LexBotVersion:
+    Type: AWS::Lex::BotVersion
+    Properties: 
+      BotId: !Ref LexBot
+      BotVersionLocaleSpecification: 
+        - BotVersionLocaleDetails:
+            SourceBotVersion: DRAFT
+          LocaleId: en_US
+      Description: Production Version
+
+  LexBotAlias:
+    Type: AWS::Lex::BotAlias
+    Properties: 
+      BotAliasName: prod
+      BotId: !Ref LexBot
+      BotVersion: !GetAtt LexBotVersion.BotVersion
+      Description: Production Alias
 
   BotRuntimeRole:
     Type: AWS::IAM::Role

@@ -314,6 +314,7 @@ Resources:
         Variables: 
           openSearchHost: !GetAtt Elasticsearch.DomainEndpoint
           lexBotID: !GetAtt LexBot.Id
+          botAliasId: !GetAtt LexBotAlias.BotAliasId
       Code:
         S3Bucket: code-hongyi
         S3Key: search-photos-cf.zip
@@ -376,6 +377,24 @@ Resources:
       BotFileS3Location:
         S3Bucket: code-hongyi
         S3ObjectKey: SearchPhotos-DRAFT-GHPLJQNTLA-LexJson.zip
+
+  LexBotVersion:
+    Type: AWS::Lex::BotVersion
+    Properties: 
+      BotId: !Ref LexBot
+      BotVersionLocaleSpecification: 
+        - BotVersionLocaleDetails:
+            SourceBotVersion: DRAFT
+          LocaleId: en_US
+      Description: Production Version
+
+  LexBotAlias:
+    Type: AWS::Lex::BotAlias
+    Properties: 
+      BotAliasName: prod
+      BotId: !Ref LexBot
+      BotVersion: !GetAtt LexBotVersion.BotVersion
+      Description: Production Alias
 
   BotRuntimeRole:
     Type: AWS::IAM::Role
@@ -672,13 +691,13 @@ Resources:
                 - echo "Zipping deployment packages..."
                 - cd create-index-cf/package
                 - zip -r9 ../../create-index-cf.zip .
-                - zip -r9 ../../create-index-cf.zip ../lambda_function.py
+                - zip -9 ../../create-index-cf.zip ../lambda_function.py
                 - cd ../../search-photos-cf/package
                 - zip -r9 ../../search-photos-cf.zip .
-                - zip -r9 ../../search-photos-cf.zip ../lambda_function.py
+                - zip -9 ../../search-photos-cf.zip ../lambda_function.py
                 - cd ../../index-photos-cf/package
                 - zip -r9 ../../index-photos-cf.zip .
-                - zip -r9 ../../index-photos-cf.zip ../lambda_function.py
+                - zip -9 ../../index-photos-cf.zip ../lambda_function.py
                 - cd ../..
 
             post_build:

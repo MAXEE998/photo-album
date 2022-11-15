@@ -11,7 +11,7 @@ rekognition = boto3.client('rekognition')
 
 lex = boto3.client('lexv2-runtime')
 botId = os.environ['lexBotID']
-botAliasId = 'TSTALIASID'
+botAliasId = os.environ['botAliasId']
 localeId = 'en_US'
 sessionId = 'assignment2'
 
