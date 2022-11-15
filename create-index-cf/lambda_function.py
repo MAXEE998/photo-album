@@ -35,9 +35,8 @@ def build_bot():
     )
 
 def lambda_handler(event, context):
-    # TODO implement
     if event["RequestType"] == "Create":
         create_index()
-        build_bot()
+    build_bot()
     cfnresponse.send(event, context, cfnresponse.SUCCESS, {"result": "ok"})
     return "ok"

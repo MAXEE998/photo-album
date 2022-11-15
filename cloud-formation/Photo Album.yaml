@@ -11,14 +11,170 @@ Resources:
       Name: AI Photo CF
       BinaryMediaTypes:
         - "image/jpeg"
-      CloneFrom: rwiljxp79a
+      Body: 
+        swagger: "2.0"
+        info:
+          description: "AI Photo Search application, built during the Cloud and Big Data course\
+            \ at Columbia University."
+          version: "1.0.0"
+          title: "AI Photo Search"
+
+  APISearchResource:
+    Type: AWS::ApiGateway::Resource
+    Properties: 
+      ParentId: !GetAtt APIGateway.RootResourceId
+      PathPart: search
+      RestApiId: !Ref APIGateway
+
+  APISearchResourceGetMethod:
+    Type: AWS::ApiGateway::Method
+    Properties: 
+      HttpMethod: GET
+      RestApiId: !Ref APIGateway
+      ResourceId: !Ref APISearchResource
+      AuthorizationType: NONE
+      RequestValidatorId: !Ref RequestValidator
+      RequestParameters:
+        method.request.querystring.q: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        IntegrationResponses: 
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ContentHandling: "CONVERT_TO_TEXT"
+            StatusCode: 200
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaSearchPhotos.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: true
+
+  APISearchResourceOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties: 
+      AuthorizationType: NONE
+      RestApiId: !Ref APIGateway
+      ResourceId: !Ref APISearchResource
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+            method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+          ResponseTemplates:
+            application/json: ''
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        Type: MOCK
+      MethodResponses:
+      - StatusCode: 200
+        ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt  LambdaSearchPhotos.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${APIGateway}/*/*
+
+  APIUploadResource:
+    Type: AWS::ApiGateway::Resource
+    Properties: 
+      ParentId: !GetAtt APIGateway.RootResourceId
+      PathPart: upload
+      RestApiId: !Ref APIGateway
+
+  APIUploadObjectResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      ParentId: !Ref APIUploadResource
+      RestApiId: !Ref APIGateway
+      PathPart: '{object}'
+
+  APIUploadObjectResourcePutMethod:
+    Type: AWS::ApiGateway::Method
+    Properties: 
+      HttpMethod: PUT
+      RestApiId: !Ref APIGateway
+      ResourceId: !Ref APIUploadObjectResource
+      AuthorizationType: NONE
+      RequestValidatorId: !Ref RequestValidator
+      RequestParameters:
+        method.request.path.object: true
+        method.request.header.Content-Type: true
+        method.request.header.x-amz-meta-customLabels: false
+      Integration:
+        Type: AWS
+        Credentials: "arn:aws:iam::814655805539:role/apigateway"
+        PassthroughBehavior: WHEN_NO_MATCH
+        ContentHandling: "CONVERT_TO_BINARY"
+        IntegrationHttpMethod: PUT
+        IntegrationResponses: 
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: 200
+        RequestParameters:
+          integration.request.path.object: "method.request.path.object"
+          integration.request.header.x-amz-meta-customLabels: "method.request.header.x-amz-meta-customLabels"
+          integration.request.header.Content-Type: "method.request.header.Content-Type"
+        Uri: !Sub arn:aws:apigateway:us-east-1:s3:path/${S3Photos}/{object}
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: true
+
+  APIUploadObjectResourceOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties: 
+      AuthorizationType: NONE
+      RestApiId: !Ref APIGateway
+      ResourceId: !Ref APIUploadObjectResource
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-amz-meta-customLabels'"
+            method.response.header.Access-Control-Allow-Methods: "'PUT,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+          ResponseTemplates:
+            application/json: ''
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        Type: MOCK
+      MethodResponses:
+      - StatusCode: 200
+        ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
 
   APIDeployment:
     Type: "AWS::ApiGateway::Deployment"
+    DependsOn:
+      - APIUploadObjectResourcePutMethod
+      - APIUploadObjectResourceOptionsMethod
+      - APISearchResourceOptionsMethod
+      - APISearchResourceGetMethod
     Properties:
       RestApiId: !Ref APIGateway
       Description: Production deployment
       StageName: prod
+
+  RequestValidator:
+    Type: AWS::ApiGateway::RequestValidator
+    Properties:
+      RestApiId: !Ref APIGateway
+      ValidateRequestParameters: true
 
   Elasticsearch:
     Type: AWS::OpenSearchService::Domain
@@ -236,7 +392,81 @@ Resources:
                 Action: "*"
                 Resource: "*"
 
-  CodePipelineFEServiceRole:
+  CodeBuildFEAssetsBucket:
+    Type: AWS::S3::Bucket
+
+  CodeBuildFEServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument: |
+        {
+            "Statement": [{
+                "Effect": "Allow",
+                "Principal": { "Service": [ "codebuild.amazonaws.com" ]},
+                "Action": [ "sts:AssumeRole" ]
+            }]
+        }
+      Policies:
+        - PolicyName: client-code-build-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+              - Resource:
+                  - !Sub arn:aws:s3:::${CodeBuildFEAssetsBucket}/*
+                  - !Sub arn:aws:s3:::${S3Frontend}/*
+                  - !Sub arn:aws:s3:::${S3Frontend}
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:PutObjectAcl
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketVersioning
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - s3:ListAllMyBuckets
+                  - s3:ListObjects
+
+  CodeBuildFEProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: "CODEPIPELINE"
+      Source:
+        Type: "CODEPIPELINE"
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            build:
+              commands:
+                - echo 'const APIGatewayID = "${APIGateway}"' > id.js
+            post_build:
+              commands:
+                - echo "DONE!!"
+          artifacts:
+            files:
+              - "**/*"
+      Environment:
+        ComputeType: "BUILD_GENERAL1_SMALL"
+        Image: "aws/codebuild/amazonlinux2-x86_64-standard:3.0"
+        Type: "LINUX_CONTAINER"
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: PUBLIC_URL
+            Value: '/'
+      Name: !Sub ${AWS::StackName}-build-client
+      ServiceRole: !Ref CodeBuildFEServiceRole
+
+  CodePipelineServiceRole:
     Type: AWS::IAM::Role
     Properties:
       Path: /
@@ -255,6 +485,8 @@ Resources:
             Statement:
               - Resource:
                   - !Sub arn:aws:s3:::${S3Frontend}/*
+                  - !Sub arn:aws:s3:::${S3Frontend}
+                  - !Sub arn:aws:s3:::${CodeBuildFEAssetsBucket}/*
                 Effect: Allow
                 Action:
                   - s3:PutObject
@@ -282,11 +514,11 @@ Resources:
   CodePipelineFrontend:
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      Name: photo-album-frontend-pipeline-cf
-      RoleArn: !GetAtt CodePipelineFEServiceRole.Arn
+      Name: photo-album-frontend-pipeline-cf-test
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
       ArtifactStore:
-          Type: S3
-          Location: !Ref S3Frontend
+        Type: S3
+        Location: !Ref CodeBuildFEAssetsBucket
       Stages:
         - Name: Source
           Actions:
@@ -304,6 +536,21 @@ Resources:
               OutputArtifacts:
                 - Name: App
               RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: ClientBuildStep
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildFEProject
+              InputArtifacts:
+                - Name: App
+              OutputArtifacts:
+                - Name: ClientBuild
+              RunOrder: 1
         - Name: Deploy
           Actions:
             - Name: ClientDeployStep
@@ -316,10 +563,25 @@ Resources:
                 BucketName: !Ref S3Frontend
                 Extract: true
               InputArtifacts:
-                - Name: App
+                - Name: ClientBuild
               OutputArtifacts: []
               Region: us-east-1
               RunOrder: 1
+
+  CodePipeLineFEWebhook: 
+    Type: 'AWS::CodePipeline::Webhook' 
+    Properties:
+      AuthenticationConfiguration: 
+        SecretToken: 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
+      Filters: 
+      - JsonPath: "$.ref" 
+        MatchEquals: refs/heads/main
+      Authentication: GITHUB_HMAC 
+      TargetPipeline: !Ref CodePipelineFrontend
+      TargetAction: App 
+      Name: FrontendWebhook 
+      TargetPipelineVersion: !GetAtt CodePipelineFrontend.Version
+      RegisterWithThirdParty: 'true'
 
   CodeBuildBEServiceRole:
     Type: AWS::IAM::Role
@@ -340,8 +602,8 @@ Resources:
             Statement:
               - Effect: Allow
                 Resource:
-                  - !Sub arn:aws:logs:us-east-1:${AWS::AccountId}:log-group:/aws/codebuild/codebuild-backend-cf*
-                  - !Sub arn:aws:logs:us-east-1:${AWS::AccountId}:log-group:/aws/codebuild/codebuild-backend-cf*:*
+                  - !Sub arn:aws:logs:us-east-1:${AWS::AccountId}:log-group:/aws/codebuild/codebuild-backend-cf
+                  - !Sub arn:aws:logs:us-east-1:${AWS::AccountId}:log-group:/aws/codebuild/codebuild-backend-cf:*
                 Action:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream

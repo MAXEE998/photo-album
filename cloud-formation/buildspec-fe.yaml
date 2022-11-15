@@ -1,0 +1,11 @@
+version: 0.2
+phases:
+  build:
+    commands:
+      - echo 'const APIGatewayID = "helloworld"' > id.js
+  post_build:
+    commands:
+      - echo "DONE!!"
+artifacts:
+  files:
+    - "**/*"

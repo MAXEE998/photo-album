@@ -23,9 +23,83 @@ Resources:
     Type: "AWS::S3::Bucket"
     Properties:
       AccessControl: PublicRead
-      BucketName: photo-album-frontend-cf
+      BucketName: photo-album-frontend-cf-test
       WebsiteConfiguration:
         IndexDocument: index.html
+
+  CodeBuildFEAssetsBucket:
+    Type: AWS::S3::Bucket
+
+  CodeBuildFEServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument: |
+        {
+            "Statement": [{
+                "Effect": "Allow",
+                "Principal": { "Service": [ "codebuild.amazonaws.com" ]},
+                "Action": [ "sts:AssumeRole" ]
+            }]
+        }
+      Policies:
+        - PolicyName: client-code-build-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+              - Resource:
+                  - !Sub arn:aws:s3:::${CodeBuildFEAssetsBucket}/*
+                  - !Sub arn:aws:s3:::${S3Frontend}/*
+                  - !Sub arn:aws:s3:::${S3Frontend}
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:PutObjectAcl
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketVersioning
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - s3:ListAllMyBuckets
+                  - s3:ListObjects
+
+  CodeBuildFEProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: "CODEPIPELINE"
+      Source:
+        Type: "CODEPIPELINE"
+        BuildSpec: |
+          version: 0.2
+          phases:
+            build:
+              commands:
+                - echo 'const APIGatewayID = "helloworld"' > id.js
+            post_build:
+              commands:
+                - echo "DONE!!"
+          artifacts:
+            files:
+              - "**/*"
+      Environment:
+        ComputeType: "BUILD_GENERAL1_SMALL"
+        Image: "aws/codebuild/amazonlinux2-x86_64-standard:3.0"
+        Type: "LINUX_CONTAINER"
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: PUBLIC_URL
+            Value: '/'
+      Name: !Sub ${AWS::StackName}-build-client
+      ServiceRole: !Ref CodeBuildFEServiceRole
 
   CodePipelineServiceRole:
     Type: AWS::IAM::Role
@@ -46,6 +120,8 @@ Resources:
             Statement:
               - Resource:
                   - !Sub arn:aws:s3:::${S3Frontend}/*
+                  - !Sub arn:aws:s3:::${S3Frontend}
+                  - !Sub arn:aws:s3:::${CodeBuildFEAssetsBucket}/*
                 Effect: Allow
                 Action:
                   - s3:PutObject
@@ -73,11 +149,11 @@ Resources:
   CodePipelineFrontend:
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      Name: photo-album-frontend-pipeline-cf
+      Name: photo-album-frontend-pipeline-cf-test
       RoleArn: !GetAtt CodePipelineServiceRole.Arn
       ArtifactStore:
-          Type: S3
-          Location: !Ref S3Frontend
+        Type: S3
+        Location: !Ref CodeBuildFEAssetsBucket
       Stages:
         - Name: Source
           Actions:
@@ -95,6 +171,21 @@ Resources:
               OutputArtifacts:
                 - Name: App
               RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: ClientBuildStep
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildFEProject
+              InputArtifacts:
+                - Name: App
+              OutputArtifacts:
+                - Name: ClientBuild
+              RunOrder: 1
         - Name: Deploy
           Actions:
             - Name: ClientDeployStep
@@ -107,11 +198,25 @@ Resources:
                 BucketName: !Ref S3Frontend
                 Extract: true
               InputArtifacts:
-                - Name: App
+                - Name: ClientBuild
               OutputArtifacts: []
               Region: us-east-1
               RunOrder: 1
 
+  CodePipeLineFEWebhook: 
+    Type: 'AWS::CodePipeline::Webhook' 
+    Properties:
+      AuthenticationConfiguration: 
+        SecretToken: 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
+      Filters: 
+      - JsonPath: "$.ref" 
+        MatchEquals: refs/heads/main
+      Authentication: GITHUB_HMAC 
+      TargetPipeline: !Ref CodePipelineFrontend
+      TargetAction: App 
+      Name: MyWebhook 
+      TargetPipelineVersion: !GetAtt CodePipelineFrontend.Version
+      RegisterWithThirdParty: 'true'
 
 Outputs:
   WebsiteURL:
