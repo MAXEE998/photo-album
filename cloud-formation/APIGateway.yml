@@ -18,72 +18,163 @@ Resources:
             \ at Columbia University."
           version: "1.0.0"
           title: "AI Photo Search"
-        paths:
-          /search:
-            get:
-              parameters:
-              - name: "q"
-                in: "query"
-                required: true
-                type: "string"
-              responses:
-                "200":
-                  description: "200 response"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: "string"
-            options:
-              consumes:
-              - "application/json"
-              responses:
-                "200":
-                  description: "200 response"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: "string"
-                    Access-Control-Allow-Methods:
-                      type: "string"
-                    Access-Control-Allow-Headers:
-                      type: "string"
-          /upload/{object}:
-            put:
-              parameters:
-              - name: "Content-Type"
-                in: "header"
-                required: true
-                type: "string"
-              - name: "object"
-                in: "path"
-                required: true
-                type: "string"
-              - name: "x-amz-meta-customLabels"
-                in: "header"
-                required: false
-                type: "string"
-              responses:
-                "200":
-                  description: "200 response"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: "string"
-            options:
-              consumes:
-              - "application/json"
-              parameters:
-              - name: "object"
-                in: "path"
-                required: true
-                type: "string"
-              responses:
-                "200":
-                  description: "200 response"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: "string"
-                    Access-Control-Allow-Methods:
-                      type: "string"
-                    Access-Control-Allow-Headers:
-                      type: "string"
+
+  APISearchResource:
+    Type: AWS::ApiGateway::Resource
+    Properties: 
+      ParentId: !GetAtt APIGateway.RootResourceId
+      PathPart: search
+      RestApiId: !Ref APIGateway
+
+  APISearchResourceGetMethod:
+    Type: AWS::ApiGateway::Method
+    Properties: 
+      HttpMethod: GET
+      RestApiId: !Ref APIGateway
+      ResourceId: !Ref APISearchResource
+      AuthorizationType: NONE
+      RequestValidatorId: !Ref RequestValidator
+      RequestParameters:
+        method.request.querystring.q: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        IntegrationResponses: 
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ContentHandling: "CONVERT_TO_TEXT"
+            StatusCode: 200
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaSearchPhotosTest.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: true
+
+  APISearchResourceOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties: 
+      AuthorizationType: NONE
+      RestApiId: !Ref APIGateway
+      ResourceId: !Ref APISearchResource
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+            method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+          ResponseTemplates:
+            application/json: ''
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        Type: MOCK
+      MethodResponses:
+      - StatusCode: 200
+        ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  APIUploadResource:
+    Type: AWS::ApiGateway::Resource
+    Properties: 
+      ParentId: !GetAtt APIGateway.RootResourceId
+      PathPart: upload
+      RestApiId: !Ref APIGateway
+
+  APIUploadObjectResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      ParentId: !Ref APIUploadResource
+      RestApiId: !Ref APIGateway
+      PathPart: '{object}'
+
+  APIUploadObjectResourcePutMethod:
+    Type: AWS::ApiGateway::Method
+    Properties: 
+      HttpMethod: PUT
+      RestApiId: !Ref APIGateway
+      ResourceId: !Ref APIUploadObjectResource
+      AuthorizationType: NONE
+      RequestValidatorId: !Ref RequestValidator
+      RequestParameters:
+        method.request.path.object: true
+        method.request.header.Content-Type: true
+        method.request.header.x-amz-meta-customLabels: false
+      Integration:
+        Type: AWS
+        Credentials: "arn:aws:iam::814655805539:role/apigateway"
+        PassthroughBehavior: WHEN_NO_MATCH
+        ContentHandling: "CONVERT_TO_BINARY"
+        IntegrationHttpMethod: PUT
+        IntegrationResponses: 
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: 200
+        RequestParameters:
+          integration.request.path.object: "method.request.path.object"
+          integration.request.header.x-amz-meta-customLabels: "method.request.header.x-amz-meta-customLabels"
+          integration.request.header.Content-Type: "method.request.header.Content-Type"
+        Uri: !Sub arn:aws:apigateway:us-east-1:s3:path/${S3Photos}/{object}
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: true
+
+  APIUploadObjectResourceOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties: 
+      AuthorizationType: NONE
+      RestApiId: !Ref APIGateway
+      ResourceId: !Ref APIUploadObjectResource
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+            method.response.header.Access-Control-Allow-Methods: "'PUT,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+          ResponseTemplates:
+            application/json: ''
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        Type: MOCK
+      MethodResponses:
+      - StatusCode: 200
+        ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  APIDeployment:
+    Type: "AWS::ApiGateway::Deployment"
+    DependsOn:
+      - APIUploadObjectResourcePutMethod
+      - APIUploadObjectResourceOptionsMethod
+      - APISearchResourceOptionsMethod
+      - APISearchResourceGetMethod
+    Properties:
+      RestApiId: !Ref APIGateway
+      Description: Production deployment
+      StageName: prod
+
+  RequestValidator:
+    Type: AWS::ApiGateway::RequestValidator
+    Properties:
+      RestApiId: !Ref APIGateway
+      ValidateRequestParameters: true
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt  LambdaSearchPhotosTest.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${APIGateway}/*/*
 
   LambdaRuntimeRole:
     Type: "AWS::IAM::Role"
@@ -120,9 +211,32 @@ Resources:
       Timeout: 10
       Role: !GetAtt LambdaRuntimeRole.Arn
 
+  S3Photos:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: photos-cf-test
+  
+  S3PhotosPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties: 
+      Bucket: !Ref S3Photos
+      PolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 's3:GetObject'
+            Effect: Allow
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref S3Photos
+                - /*
+            Principal: '*'
+
 Outputs:
   RootResourceID:
     Description: RootResourceID
-    Value: !GetAtt 
-      - APIGateway
-      - RootResourceId 
+    Value: !GetAtt APIGateway.RootResourceId 
+  SearchResourceID:
+    Description: APISearchResourceID
+    Value: !Ref APISearchResource 
