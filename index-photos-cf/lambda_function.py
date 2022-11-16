@@ -3,6 +3,8 @@ import boto3
 import os
 from opensearchpy import OpenSearch, RequestsHttpConnection
 
+print("CodeBuild Update")
+
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 rekognition = boto3.client('rekognition')
